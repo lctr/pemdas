@@ -496,13 +496,45 @@ mod test {
     use super::*;
 
     #[test]
-    fn see_posns() {
+    fn token_positions() {
         let src = r#"
 '\u005c' 'elem
 "#;
-        let lexer = Lexer::new(src);
-        for (token, locspan) in lexer {
-            println!("`{token}` @ {locspan} {token:?}")
+        let mut lexer = Lexer::new(src);
+        for ((actual, actual_locspan), (expected, expected_locspan)) in lexer.by_ref().zip([
+            (
+                Token::Lit(Literal::Char('\\')),
+                LocSpan {
+                    lo: Loc {
+                        line: 2,
+                        col: 1,
+                        pos: 1,
+                    },
+                    hi: Loc {
+                        line: 2,
+                        col: 10,
+                        pos: 10,
+                    },
+                },
+            ),
+            (
+                Token::Affix(Symbol::intern("elem"), true),
+                LocSpan {
+                    lo: Loc {
+                        line: 2,
+                        col: 10,
+                        pos: 10,
+                    },
+                    hi: Loc {
+                        line: 2,
+                        col: 15,
+                        pos: 15,
+                    },
+                },
+            ),
+        ]) {
+            assert_eq!(actual, expected);
+            assert_eq!(actual_locspan, expected_locspan);
         }
     }
 }
