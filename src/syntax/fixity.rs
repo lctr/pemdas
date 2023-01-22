@@ -981,125 +981,69 @@ mod test {
     use crate::syntax::ast::Ident;
     use crate::syntax::parser;
 
+    fn bin(l: Expr, op: Infix, r: Expr) -> Expr {
+        Expr::Bin(Box::new(l), op, Box::new(r))
+    }
+
+    fn ident(s: &str) -> Ident {
+        Ident::Lower(Symbol::intern(s))
+    }
+
+    fn var(s: &str) -> Expr {
+        Expr::Var(ident(s))
+    }
+
     #[test]
     fn test_fixity() {
         let src = r#"
 infixr 5 :
 a:b:c:d:[]
 "#;
-        match parser::parse(src) {
-            Err(err) => {
-                eprintln!("{err}");
-            }
-            Ok(mut ast) => {
-                let mut resolver = Resolver::new();
-                assert!(resolver.resolve_ast(&mut ast).is_ok());
-                use crate::text::symbol;
-                static COLON: Infix = Infix::Standard(Symbol::COLON);
-                let [a, b, c, d] =
-                    symbol::intern_n(["a", "b", "c", "d"]).map(|e| Expr::Var(Ident::Lower(e)));
-                let bin = |l, op, r| Expr::Bin(Box::new(l), op, Box::new(r));
-                let expected = bin(
-                    a,
-                    COLON,
-                    bin(b, COLON, bin(c, COLON, bin(d, COLON, Expr::List(vec![])))),
-                );
-                assert_eq!(ast.exprs[0].expr, expected)
-            }
-        }
+        let mut ast = parser::parse(src).expect("valid syntax");
+        let mut resolver = Resolver::new();
+        assert!(resolver.resolve_ast(&mut ast).is_ok());
+        use crate::text::symbol;
+        const COLON: Infix = Infix::Standard(Symbol::COLON);
+        let [a, b, c, d] =
+            symbol::intern_n(["a", "b", "c", "d"]).map(|e| Expr::Var(Ident::Lower(e)));
+        let expected = bin(
+            a,
+            COLON,
+            bin(b, COLON, bin(c, COLON, bin(d, COLON, Expr::List(vec![])))),
+        );
+        assert_eq!(ast.exprs[0].expr, expected)
     }
 
     #[test]
-    fn test_print_expr_with_fixities() {
+    fn local_fixities_stay_in_scope() {
         let src = r#"
-
-infix 4 ==, <
-infixl 2 ||
-~~(1) raw
-a == b || c < d
-~~(1) expected
-(a == b) || (c < d)
-
 infixl 6 +, -
-~~(2) raw
-a + b + c + d
-~~(2) expected
-((a + b) + c) + d
-
-~~(3) raw
-a + b - c + d
-~~(3) expected
-((a + b) - c) + d
-
-infixl 7 *, /, %
-~~(4) raw
-a + b - c * d
-~~(4) expected
-(a + b) - (c * d)
-
-~~(5) raw
-a + b x * c - (d / e)
-~~(5) expected
-(a + ((b x) * c)) - (d / e)
-
-infixr 5 :
-~~(6) raw
-a : b : c : d : []
-~~(6) expected
-a : (b : (c : (d : [])))
-
-infixl 6 <+
-~~(7) raw
-a <+ b <+ c <+ d
-~~(7) expected
-((a <+ b) <+ c) <+ d
-
-~~(8) raw
-a <+ b : c <* d : e : f
-~~(8) expected
-(a <+ b) : ((c <+ d) : (e : f))
-
-infix 4 `elem`
-~~(9) raw
-a `elem` b : c : d
-~~(9) expected
-a `elem` (b : (c : d))
-
-~~(10)
-~~ before raw
-a + b + c + d
-~~ before expected
-((a + b) + c) + d
-~~ before raw
 let infixr 6 + in a + b + c + d
-~~ before expected
-a + (b + (c + d))
-
-f (a + b + c)
-f ((a + b) + c)
 a + b + c + d
 "#;
-        match parser::parse(src) {
-            Err(err) => {
-                eprintln!("{err}");
-            }
-            Ok(mut ast) => {
-                let mut resolver = Resolver::new();
-                println!("before rearranging fixities");
-                for expr in ast.exprs.iter().map(|decl| &decl.expr) {
-                    resolver.print_expr(expr)
-                }
-                if let Err(errors) = resolver.resolve_ast(&mut ast) {
-                    for error in errors {
-                        eprintln!("{error}\n")
-                    }
-                }
+        let mut ast = parser::parse(src).expect("valid syntax");
+        let mut resolver = Resolver::new();
+        assert!(resolver.resolve_ast(&mut ast).is_ok());
+        let plus = Infix::Standard(Symbol::intern("+"));
+        let expected1 = bin(
+            var("a"),
+            plus,
+            bin(var("b"), plus, bin(var("c"), plus, var("d"))),
+        );
+        let expected2 = bin(
+            bin(bin(var("a"), plus, var("b")), plus, var("c")),
+            plus,
+            var("d"),
+        );
 
-                println!("\nafter rearranging fixities");
-                for expr in ast.exprs.iter().map(|decl| &decl.expr) {
-                    resolver.print_expr(expr)
-                }
-            }
-        }
+        assert_eq!(
+            if let Expr::Let(_, e) = &ast.exprs[0].expr {
+                &**e
+            } else {
+                unreachable!("we know this expression is a let expression")
+            },
+            &expected1
+        );
+        assert_eq!(&ast.exprs[1].expr, &expected2);
     }
 }
