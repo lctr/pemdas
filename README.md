@@ -148,19 +148,19 @@ ident   = lower, { upper | lower | digit | "_" }, trails?
 lower   = <any lowercase alphabetic character>;
 upper   = <any uppercase alphabetic character>;
 
-expr    = "\​", pat, {pat}, "->", expr       (* lambda *)
-        | "let", fixity, "in", expr         (* local fixity *)
-        | fexp                              (* function expr *)
+expr    = "\​", (pat)+, "->", expr          (* lambda *)
+        | "let", fixity, "in", expr        (* local fixity *)
+        | fexp                             (* function expr *)
         ;
 fexp    = [fexp] aexp
         ;
 aexp    = ident
         | literal
         | "(", infix, ")"
-        | "(", expr, ")"                    (* grouped expression *)
-        | "(", expr, ("," , expr)+, ")"     (* tuple *)
-        | "[", expr, { ",", expr }, "]"     (* list *)
-        | expr infix expr                   (* binary expression *)
+        | "(", expr, ")"                   (* grouped expression *)
+        | "(", expr, ("," , expr)+, ")"    (* tuple *)
+        | "[", expr, { ",", expr }, "]"    (* list *)
+        | expr infix expr                  (* binary expression *)
         ;
 ```
 
