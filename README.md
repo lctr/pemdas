@@ -109,7 +109,7 @@ shorthand:
 | Shorthand | Description
 |-----------|----------------------------------------------------------
 | `"p"`     | the occurrence of the terminal string `p`
-| `` `p` `` | the occurrence of the terminal string `\`
+| `` `p` `` | the occurrence of the terminal string `p`
 | `(p)`     | the grouping of compound rules as a single rule `p`
 | `[p]`     | the production `p` is optional
 | `{p}`     | the production `p` repeated 0 or more times
