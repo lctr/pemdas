@@ -29,6 +29,32 @@ pub fn is_prefix(pre: impl Match<str>, s: &str) -> bool {
     matches!(s.split_whitespace().next(), Some(t) if pre.check(t))
 }
 
+/// If `pre` matches the first element yielded by the iterator
+/// returned by calling the standard library's `split_whitespace`
+/// string method on the given string slice `s`, then `s`, trimmed of
+/// whitespace and with the prefix removed will be returned.
+///
+/// Otherwise, the original string slice `s` is returned.
+///
+/// Note that `pre` need not be a string slice, but instead must
+/// implement `Match<str>`, and hence may be a character, a slice of
+/// characters, a string slice, a function of either a `char` or
+/// `&str` returning a `bool`, or an `Option` wrapping a `char` or `&str`.
+pub fn strip_prefix(pre: impl Match<str>, s: &str) -> &str {
+    let mut iter = s.split_whitespace();
+    match iter.next() {
+        Some(p) if pre.check(p) => {
+            let plen = p.len();
+            if plen < s.trim().len() {
+                s[plen..].trim()
+            } else {
+                ""
+            }
+        }
+        _ => s,
+    }
+}
+
 /// Returns `true` if the character `c` is valid in a number with a
 /// given `radix` based on whether it is the `first` character in the
 /// number.
@@ -332,6 +358,18 @@ impl Match<str> for char {
 impl Match<char> for str {
     fn check(&self, with: &char) -> bool {
         with.check(self)
+    }
+}
+
+impl Match<str> for &&str {
+    fn check(&self, with: &str) -> bool {
+        **self == with
+    }
+}
+
+impl Match<str> for String {
+    fn check(&self, with: &str) -> bool {
+        &*self == with
     }
 }
 
