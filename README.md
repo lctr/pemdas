@@ -89,9 +89,10 @@ There is a slight stylistic difference in *Pemdas*'s lexical syntax:
 * Both infixes and identifiers may end in a sequence of any
   combination of superscript/subscript digits, superscript/subscript
   parentheses or superscript/subscript
-* Line comments by default begin with `-- `, where the double dashes `--` *must* be
-  followd be a non-operator character (infixes beginning with `--` followed by another
-  operator character, such as `--+`, are read as infixes).
+* Line comments by default begin with `~~ `, where the double tildes
+  `~~` *must* be followd be a non-operator character (infixes
+  beginning with `~~` followed by another operator character, such as
+  `~~+`, are read as infixes).
 
 ### Formal syntax
 A fixity declaration consists of an *associativity* keyword (`infixl`, `infixr` or
