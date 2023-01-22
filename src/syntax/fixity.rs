@@ -136,7 +136,7 @@ impl fmt::Display for Fixity {
 enum Rule {
     Shift,
     Reduce,
-    Ambiguous(Prec, Assoc, Assoc),
+    Ambiguous(Fixity, Fixity),
 }
 
 impl Rule {
@@ -155,7 +155,7 @@ impl Rule {
             match (curr_assoc, prev_assoc) {
                 (Assoc::Left, Assoc::Left) => Rule::Reduce,
                 (Assoc::Right, Assoc::Right) => Rule::Shift,
-                _ => Rule::Ambiguous(curr_prec, prev_assoc, curr_assoc),
+                _ => Rule::Ambiguous(prev_fixity, curr_fixity),
             }
         } else {
             Rule::Reduce
@@ -174,46 +174,30 @@ impl Rule {
         infixes.push(infix);
     }
 
-    fn error(_prec: Prec, prev: Operator, curr: Operator) -> AssocError {
-        match (prev, curr) {
-            ((_, Assoc::Neither), _) | (_, (_, Assoc::Neither)) => {
-                AssocError::Nonfix { prev, curr }
-            }
-            _ => AssocError::Mixfix { prev, curr },
-        }
+    fn error(prev: Operator, curr: Operator) -> AssocError {
+        AssocError { prev, curr }
     }
 }
 
-type Operator = (Infix, Assoc);
+type Operator = (Infix, Fixity);
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum AssocError {
-    /// Non-associative infix within an associative context
-    Nonfix { prev: Operator, curr: Operator },
-    /// Mismatching associativities within the same precedence level
-    Mixfix { prev: Operator, curr: Operator },
+pub struct AssocError {
+    prev: Operator,
+    curr: Operator,
 }
 
-impl AssocError {
-    fn parts(&self) -> (&'static str, &Operator, &Operator) {
-        match self {
-            AssocError::Nonfix { prev, curr } => ("Non-associative operator", prev, curr),
-            AssocError::Mixfix { prev, curr } => ("Associativity mismatch", prev, curr),
-        }
-    }
-}
+impl AssocError {}
 
 impl std::fmt::Display for AssocError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let (_label, (prev_op, prev_assoc), (curr_op, curr_assoc)) = self.parts();
         write!(
             f,
-            "found {} operator `{}` followed by infix \
-            expression using the {} operator `{}`",
-            prev_assoc.adjective(),
-            prev_op,
-            curr_assoc.adjective(),
-            curr_op
+            "found {} operator `{}` and {} operator `{}` in the same infix expression",
+            self.prev.1.assoc.adjective(),
+            &self.prev.0,
+            self.curr.1.assoc.adjective(),
+            &self.curr.0
         )
     }
 }
@@ -304,8 +288,8 @@ impl Fixities {
                                         break;
                                     }
                                     Rule::Reduce => Rule::reduce(&mut operands, &mut infixes),
-                                    Rule::Ambiguous(prec, a0, a1) => {
-                                        return Err(Rule::error(prec, (prev_op, a0), (infix, a1)))
+                                    Rule::Ambiguous(prev, curr) => {
+                                        return Err(Rule::error((prev_op, prev), (infix, curr)))
                                     }
                                 };
                             }
