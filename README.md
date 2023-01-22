@@ -44,6 +44,12 @@ Thus, to locally redefine `+` as left-associative with precedence `4`
 and `?` as right-associative with precedence `6`, we'd write `let
 infixl 4 + in let infixr 6 ? in a + b ? c + d`.
 
+Below we have an example of a session where `+` is only locally
+defined. Note the distinct groupings resulting from each locally
+scoped fixity declaration.
+
+![local fixity declarations](img/local-fixities.png)
+
 ## Decorative syntax nodes
 Support for lexing and parsing literals (such as `'x'`, `"foo"`, `55`,
 and `"\u+7FA"`) plays a purely aesthetic role as no computation or
@@ -61,9 +67,17 @@ session by `:load --prelude` and `:load --math`, respectively.
 Alternatively, files may be loaded in session with `:load <path>`,
 where `<path>` is the filepath of the desired file.
 
+# Todo
+- [x] Load fixities declared in `.hs` file
+- [ ] Change UI to indicate line mode
+- [x] Pattern support in lambdas
+- [ ] Infix patternns in lambdas
+- [ ] Custom preferences
+- [ ] Improve syntax error reporting
+- [ ] Add support for command line arguments
 
-## Syntax reference
-### Lexical syntax
+# Syntax reference
+## Lexical syntax
 There is a slight stylistic difference in *Pemdas*'s lexical syntax:
 * Identifiers -- beginning with either `_`, an uppercase or lowercase
   alphabetic character -- consisting of more than one character may be
@@ -94,7 +108,7 @@ There is a slight stylistic difference in *Pemdas*'s lexical syntax:
   beginning with `~~` followed by another operator character, such as
   `~~+`, are read as infixes).
 
-### Formal syntax
+## Formal syntax
 A fixity declaration consists of an *associativity* keyword (`infixl`, `infixr` or
 `infix`) followed by an optional *precedence* value (a digit between `0`
 and `9`, inclusive) and a comma-separated (non-empty) list of
