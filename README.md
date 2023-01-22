@@ -109,7 +109,6 @@ shorthand:
 | Shorthand | Description
 |-----------|----------------------------------------------------------
 | `"p"`     | the occurrence of the terminal string `p`
-| `` `p` `` | the occurrence of the terminal string `p`
 | `(p)`     | the grouping of compound rules as a single rule `p`
 | `[p]`     | the production `p` is optional
 | `{p}`     | the production `p` repeated 0 or more times
@@ -149,7 +148,7 @@ ident   = lower, { upper | lower | digit | "_" }, trails?
 lower   = <any lowercase alphabetic character>;
 upper   = <any uppercase alphabetic character>;
 
-expr    = `\`, pat, {pat}, "->", expr       (* lambda *)
+expr    = "\​", pat, {pat}, "->", expr       (* lambda *)
         | "let", fixity, "in", expr         (* local fixity *)
         | fexp                              (* function expr *)
         ;
