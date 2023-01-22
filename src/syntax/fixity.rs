@@ -989,12 +989,16 @@ mod test {
         Ident::Lower(Symbol::intern(s))
     }
 
+    fn op(s: &str) -> Infix {
+        Infix::Standard(Symbol::intern(s))
+    }
+
     fn var(s: &str) -> Expr {
         Expr::Var(ident(s))
     }
 
     #[test]
-    fn test_fixity() {
+    fn default_cons_fixity_is_right_assoc() {
         let src = r#"
 infixr 5 :
 a:b:c:d:[]
@@ -1006,12 +1010,37 @@ a:b:c:d:[]
         const COLON: Infix = Infix::Standard(Symbol::COLON);
         let [a, b, c, d] =
             symbol::intern_n(["a", "b", "c", "d"]).map(|e| Expr::Var(Ident::Lower(e)));
-        let expected = bin(
-            a,
-            COLON,
-            bin(b, COLON, bin(c, COLON, bin(d, COLON, Expr::List(vec![])))),
-        );
-        assert_eq!(ast.exprs[0].expr, expected)
+        assert_eq!(
+            ast.exprs[0].expr,
+            bin(
+                a,
+                COLON,
+                bin(b, COLON, bin(c, COLON, bin(d, COLON, Expr::List(vec![])))),
+            )
+        )
+    }
+
+    #[test]
+    fn arithmetic_fixities() {
+        let src = r#"
+infixl 6 +, -
+infixl 7 *, /
+infixr 8 ^
+a + b * c - d ^ e
+"#;
+        let mut ast = parser::parse(src).expect("valid syntax");
+        let mut resolver = Resolver::new();
+        assert!(resolver.resolve_ast(&mut ast).is_ok());
+        // a + b * c - d ^ e
+        // (a + (b * c)) - (d ^ e)
+        assert_eq!(
+            ast.exprs[0].expr,
+            bin(
+                bin(var("a"), op("+"), bin(var("b"), op("*"), var("c"))),
+                op("-"),
+                bin(var("d"), op("^"), var("e"))
+            )
+        )
     }
 
     #[test]
