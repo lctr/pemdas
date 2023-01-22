@@ -2,6 +2,11 @@
 name = "pemdas"
 version = "0.1.0"
 edition = "2021"
+description = "An interactive REPL that pretty prints expressions (adhering to a subset of Haskell syntax) according to custom defined operators and their fixities"
+repository = "https://github.com/lctr/pemdas"
+readme = "README.md"
+keywords = ["REPL", "fixity", "operator", "Haskell"]
+license = "MIT"
 
 # See more keys and their definitions at
 # https://doc.rust-lang.org/cargo/reference/manifest.html
