@@ -740,9 +740,24 @@ mod test {
             (r#"f x"#, tree! { App (E.Lower f) (E.Lower x) }),
             (
                 r#"f x (y, z)"#,
-                tree! { App (E.Lower f) (E.Lower x) (E.Tup (E.Lower y) (E.Lower z)) },
+                Expr::App(
+                    Box::new(Expr::App(
+                        Box::new(Expr::Var(Ident::Lower(Symbol::intern("f")))),
+                        Box::new(Expr::Var(Ident::Lower(Symbol::intern("x")))),
+                    )),
+                    Box::new(Expr::Tup(vec![
+                        Expr::Var(Ident::Lower(Symbol::intern("y"))),
+                        Expr::Var(Ident::Lower(Symbol::intern("z"))),
+                    ])),
+                ),
             ),
-            ("f x\ny", tree! { App (E.Lower f) (E.Lower x) }),
+            (
+                " f x\ny",
+                Expr::App(
+                    Box::new(Expr::Var(Ident::Lower(Symbol::intern("f")))),
+                    Box::new(Expr::Var(Ident::Lower(Symbol::intern("x")))),
+                ),
+            ),
         ] {
             assert_src_expr(src, expr)
         }
