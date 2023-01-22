@@ -546,32 +546,23 @@ impl VisitMut for Resolver {
                 // add local fixities, then after rewriting the body,
                 // restore pre-existing fixities and remove all the
                 // rest
-                //
-                // note that since hash_map APIs return `None` if an
-                // entry didn't exist, this vector will never have a
-                // length greater than the number of fixities
-                // originally defined
                 let old_fixities = decl
                     .infixes
                     .clone()
                     .into_iter()
-                    .flat_map(|infix| {
-                        self.fixities
-                            .insert(infix, decl.fixity)
-                            .map(|fx| (infix, fx))
-                    })
+                    .map(|infix| (infix, self.fixities.insert(infix, decl.fixity)))
                     .collect::<Vec<_>>();
                 self.visit_expr_mut(body);
-                // optimization: instead of manually removing fixities
-                // that didnt exist prior to this expression, remove
-                // `new_len - old_len` of the last fixities, then
-                // re-insert the fixities that used to exist
-                self.fixities
-                    .remove_last(old_fixities.len())
-                    .for_each(|_| ());
-                old_fixities.into_iter().for_each(|(infix, fixity)| {
-                    self.fixities.insert(infix, fixity);
-                });
+                old_fixities
+                    .into_iter()
+                    .for_each(|(infix, fixity)| match fixity {
+                        Some(fixity) => {
+                            self.add_fixity(infix, fixity);
+                        }
+                        None => {
+                            self.fixities.remove(&infix);
+                        }
+                    })
             }
             _ => ast::walk_expr_mut(self, expr),
         };
