@@ -208,14 +208,13 @@ impl<'t> Lexer<'t> {
                     Token::Affix(Symbol::intern("~"), false)
                 }
             }
-            "~~|" => self.doc_comments(),
             "~~" => {
                 self.line_comment();
                 self.lex()
             }
             "\\" | "λ" => Token::Lambda,
             "-" => Token::Dash,
-            "->" | "→" => Token::Arrow,
+            "->" | "→" | "⟶" | "↦" | "⟼" => Token::Arrow,
             "@" => Token::At,
             s => Token::Affix(Symbol::intern(s), false),
         }
@@ -457,44 +456,6 @@ impl<'t> Lexer<'t> {
             // TODO: keep or ignore block comments?
             None
         }
-    }
-
-    fn doc_comments(&mut self) -> Token {
-        let mut _doc_lines = vec![self.eat_while(|c| c != '\n')];
-        // ignore newline
-        self.bump_char();
-        let init = self.pos;
-        loop {
-            if self.on_char('~') {
-                self.bump_char();
-                if self.on_char('{') {
-                    self.bump_char();
-                    match self.block_comment() {
-                        Some(err) => return Token::Error(err),
-                        None => break,
-                    }
-                } else if self.on_char('~') {
-                    self.bump_char();
-                    let doc = if self.on_char('|') {
-                        self.bump_char();
-                        true
-                    } else {
-                        false
-                    };
-                    let (a, b) = self.eat_while(|c| c != '\n');
-                    if doc {
-                        _doc_lines.push((a, b))
-                    }
-                    continue;
-                } else {
-                    let (_, b) = self.eat_while(grapheme::is_infix_char);
-                    return Token::Affix(Symbol::intern(&self.src[init..b]), false);
-                }
-            } else {
-                break;
-            }
-        }
-        self.lex()
     }
 }
 
